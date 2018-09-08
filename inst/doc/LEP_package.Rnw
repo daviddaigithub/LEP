@@ -1,0 +1,219 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+\documentclass[11pt]{article}
+%% Set my margins
+\setlength{\oddsidemargin}{0.0truein}
+\setlength{\evensidemargin}{0.0truein}
+\setlength{\textwidth}{6.5truein}
+\setlength{\topmargin}{0.0truein}
+\setlength{\textheight}{9.0truein}
+\setlength{\headsep}{0.0truein}
+\setlength{\headheight}{0.0truein}
+\setlength{\topskip}{0pt}
+%% End of margins
+
+% \usepackage{subfigure}
+
+%%\pagestyle{myheadings}
+%%\markboth{$Date$\hfil$Revision$}{\thepage}
+\usepackage[pdftex,
+bookmarks,
+bookmarksopen,
+pdfauthor={Mingwei Dai},
+pdftitle={LEP Vignette}]
+{hyperref}
+
+\title{`\texttt{LEP}' Package for Joint Analysis of Individual-level and Summary-level GWAS Data by Leveraging Pleiotropy}
+\author{Mingwei Dai$~^{1,2}$, Xiang Wan$~^3$, Hao Peng$~^4$, Yao Wang$~^1$, Yue Liu$~^2$, \\ Jin Liu$~^6$, Zongbe Xu$~^1$, Can Yang$~^2$\\
+$~^1$ School of Mathematics and Statistics, Xi'an Jiaotong University, Xi'an, China.\\
+$~^2$ Department of Mathematics, Hong Kong University of Science and Technology, Hong Kong.\\
+$~^3$ ShenZhen Research Institute of Big Data, ShenZhen, China.\\
+$~^4$ School of Business Administration, Southwestern University of Finance and Economics,\\ Chengdu, China.\\
+$~^5$ Xiyuan Hospital of China Academy of Chinese Medical Sciences, Beijing, China.\\
+$~^6$ Centre for Quantitative Medicine, Duke-NUS Medical School, Singapore.\\
+}
+
+\date{\today}
+
+\SweaveOpts{engine=R, echo=TRUE, pdf=TRUE}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+\section{Overview}
+
+This vignette provides an introduction to the `\texttt{LEP}' package.
+LEP is a statistical approach for joint analysis of individual-level and summary-level GWAS data by leveraging pleiotropy in Genome Wide Association Studies. This package provides computationally efficient and user friendly interface to fit and evaluate the LEP model. It accepts both the R-type data and binary plink files.
+
+The package can be loaded with the command:
+
+<<preliminaries,echo=FALSE,results=hide>>=
+options(prompt = "R> ")
+@
+
+<<LEP-prelim, warning=FALSE>>=
+library("LEP")
+@
+
+This vignette is organized as follows.
+Section \ref{fitting} discusses how to fit LEP in various settings.
+Section \ref{cross_validation} show how to evaluate the performance in terms of cross validation. Section \ref{predict} shows how to predict by the well-trained model.
+
+
+\section{Workflow}\label{workflow}
+
+In this vignette, three different simulated data sets are used for demonstration. (1). R-type D1 = \{X0, y0, P0\} are genotype, phenotype and $p$-values, they have no information (SNP names) for the SNPs; (2) R-type D2= \{X, y, P\} are the counterparts, but they contain the information for the SNPs; (3) the genotyp data in the plink format are `\texttt{sim0.bed}', `\texttt{sim0.fam}', `\texttt{sim0.bim}', the $p$-values stored in \{P\} are with SNP information. For the simulation data, $\{X, X0\}$ are both $N \times M$ matrix, where $N=1000$ is the sample size and $M=3000$ is the number of SNPs; $\{y, y_0\}$ are both $N \times 1$ vector; $\{P, P0\}$ are both $M \times K$ matrix, where $M=3000$ is for the number of SNPs, $K=3$ is for the nubmer of GWAS.
+
+
+The R-type data used in this package could be loaded by the command.
+<<LEPExample-prelim>>=
+data(DB)
+@
+The binary plink files could be accessed by
+<<LEP-noZA-show,eval=TRUE>>=
+plinkfile <- gsub(".bim","",system.file("extdata", "sim0.bim", package = "LEP"))
+@
+
+\subsection{Fitting the LEP}\label{fitting}
+
+R package \texttt{LEP} provides flexible statistical framework
+and automatically adjusts its model structure based on the provided data.
+The \texttt{LEP} model could be fitted in the following three ways.
+
+
+\subsubsection{R-type data with no SNPs' information}
+In this subsection, the matrices of genotype data and $p$-values, which have not any information for SNPs, are used. It requires that
+<<LEP-noZA-show,eval=TRUE>>=
+nrow(X0) == length(y0)
+ncol(X0) == nrow(P0)
+@
+
+The complete LEP function is,
+<<LEP-noZA-show,eval=FALSE>>=
+fit <- LEP(X, y, SS = NULL, opts = NULL, logfile = "screen", lbPval = 1e-12, verbose = T)
+@
+
+The genotype data \texttt{X} and the phenotype data \texttt{y} must be specified, the remaining parameters are optional, they have default values. To be specific, \texttt{SS} is for the summary statistics, \texttt{opts} is for the runing parameter setting, \texttt{logfile} is for the log file name ( the default value `screen' indicates that the function would print the information on the screen ), \texttt{lbPval} is for the restriction of the minimal value of $p$-values, \texttt{verbose} is for whether to print the running information. The output \texttt{fit} contains the parameters for the LEP model, the detail would be mentioned in the following part.
+
+The parameter \texttt{opts} has two fields, `\texttt{max\_iter}' for the max number of iterations and `\texttt{dis\_gap}' for the display gap of the printing message. Their default values are $(600,60)$. They could be specified individually or simultaneously by either of the following commands.
+<<LEP-noZA-show,eval=FALSE>>=
+opts = list(dis_gap=1)
+opts = list(max_iter = 300)
+opts = list(max_iter = 300, dis_gap=1)
+@
+The order for the parameters does not matter.
+
+
+The LEP model is fitted only with the genotype data, with no information printed:
+<<LEP-noZA-show,eval=FALSE>>=
+fit <- LEP(X0, y0, opts = opts, verbose = F)
+@
+
+The LEP model integrates the genotype data \{X0, y0\} and summary statistics \{P0\} with the following command
+<<LEP-noZA-show,eval=FALSE>>=
+fit <- LEP(X0, y0, SS = P0, verbose = F)
+@
+
+
+
+\subsubsection{R-type data with SNPs' information}
+If the genotype data and summary statitistics share only part of the set of SNPs, LEP would take their intersection automaticly. The information for the genotype data and $p$-values is as follows.
+<<LEP-noZA-show,eval=TRUE>>=
+str(X)
+str(P)
+geno_snps = colnames(X)
+ss_snps = rownames(P)
+num_intersect <- intersect(geno_snps,ss_snps)
+print(length(num_intersect))
+@
+According to the above output, it could be seen that the genotype data and the summary statistics share $2900$ SNPs, LEP uses the data with respect to the intersection of the SNPs to fit the model.
+
+<<LEP-noZA-show,eval=TRUE>>=
+fit <- LEP(X, y, SS = P)
+@
+
+
+\subsubsection{Binary plink file with R-type data storing the SNPs information}
+LEP package also supports the input of binary plink file, which saves huge space for the genotype data.
+
+The complete LEP function is,
+<<LEP-noZA-show,eval=FALSE>>=
+fit <- LEP_Plink(genoplinkfile, SS = NULL, opts = NULL, logfile = "screen", lbPval = 1e-12, verbose = F)
+@
+
+In this scene,  genotype data in the plink format take the place of R-type data $\{X, y\}$
+<<LEP-noZA-show,eval=TRUE>>=
+fit <- LEP_Plink(plinkfile, SS = P)
+@
+For the simulated data in this package, all the information contained in the plink files is the same as $\{X, y\}$ in $D2$. LEP will take intersection as it does for $D2$.
+
+
+
+The output for the above fitting is like following
+<<LEPExample-prelim>>=
+str(fit)
+@
+12 items of output are listed as above, the first 7 fields correspond to the notations $\sigma^2_{\beta},\sigma^2_e, \{\gamma_j\}_1^{M}$, $\{\mu_j\}_1^M$, $\{s^2_j\}_1^M$, $\pi$, $M$. $cov$ corresponds to the regression intercept for the LEP model, \texttt{L} is the final lower bound, \texttt{iter} is the total iterations taken, \texttt{u,v} are the pleitropy effect defined in the paper, \texttt{fdr} is the local false discovery rate for each variable and \texttt{param\_beta} is the $\alpha$ parameter for each Beta distribution for the $p$-values.
+
+
+\subsection{Evaluate the performance of prediction by cross validation}\label{cross_validation}
+
+This section shows how to evaluate the performance of the model in terms of prediction accuracy by cross validation. Two corresponding functions are as follows
+
+The parameter \texttt{opts} has three fields, `\texttt{max\_iter}' for the max number of iterations for each fold, `\texttt{dis\_gap}' for the display gap of printing message and `\texttt{n\_fold}' for the number of folds. Their default values are $(300,60,5)$. They could be specified individually or simultaneously by either of the following commands.
+<<LEP-noZA-show,eval=FALSE>>=
+opts = list(dis_gap=1)
+opts = list(max_iter = 300)
+opts = list(max_iter = 300,dis_gap=1)
+opts = list(n_fold = 5)
+@
+
+<<LEP-noZA-show,eval=FALSE>>=
+performance <- LEPCV(X, y, SS = NULL, opts = NULL, logfile = "screen", lbPval = 1e-12, measure = "mse")
+@
+
+and
+
+<<LEP-noZA-show,eval=FALSE>>=
+performance <- LEPCV_Plink(plinkfile, SS = NULL, opts = NULL, logfile = "screen", lbPval = 1e-12, measure = "mse")
+@
+
+The performance could be measured by $auc$ or $mse$(by default) specified by the parameter \texttt{measure}. Besides, the parameter \texttt{opts} have a field \texttt{n\_fold} to specify the number of folds for cross-validation as the previous one, the default value is $5$. It could be specified as
+<<LEP-noZA-show,eval=TRUE>>=
+opts = list(n_fold = 10)
+@
+
+The model could be evaluated without $p$-values
+<<LEP-noZA-show,eval=TRUE>>=
+  performance <- LEPCV(X, y)
+  print(performance)
+@
+
+or with $p$-values
+<<LEP-noZA-show,eval=TRUE>>=
+  performance <- LEPCV(X, y, SS = P,measure = "auc")
+  print(performance)
+@
+
+or with genotype data in the plink format
+<<LEP-noZA-show,eval=TRUE>>=
+performance <- LEPCV_Plink(plinkfile, SS = P, measure = "auc")
+@
+
+
+\subsection{Predict with the fitted model}\label{predict}
+Once a model is fitted by \texttt{LEP}, it could be used to predict the phenotype of the given genotype data by the following command.
+<<LEP-noZA-show,eval=FALSE>>=
+yhat <- LEP_Predict(fit, X)
+@
+
+Please contact Mingwei Dai at \texttt{daimingwei@gmail.com} for any questions or suggestions regarding the `\texttt{LEP}' package.
+
+
+\begin{thebibliography}{99}
+\bibitem{LEP} Mingwei Dai, Xiang Wan, Hao Peng, Yao Wang, Yue Liu, Jin Liu, Zongben Xu, Can Yang. LEP: Joint Analysis of Individual-level and Summary-level GWAS Data by Leveraging Pleiotropy. Submitted.
+
+\end{thebibliography}
+
+\end{document}
+
+

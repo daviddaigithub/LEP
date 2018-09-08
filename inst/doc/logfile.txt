@@ -1,0 +1,29 @@
+Finish Reading Plink file, time elapsed:0.137361
+Sample Size = 2000 SNP Number = 3000
+get snps_from_ss name!
+Using Information from GWAS:
+lab1 lab2 lab3 lab4 lab5 lab6 lab7 
+Before Joining....Number of SNPs in Genotype Data:3000
+snps_from_ss-3500
+After Joining....Number of SNPs in Genotype Data:3000
+Start 5 cross validations!
+.
+Begin Iterations
+0th iteration L=1763.39;sigma2e = 0.156491; sigma2beta = 0.00286305 ;pi = 0.0386929 time = 0.017366
+Converge at 6th iteration, L = 1991.32
+.
+Begin Iterations
+0th iteration L=1781.11;sigma2e = 0.159326; sigma2beta = 0.002667 ;pi = 0.0374689 time = 0.052593
+Converge at 6th iteration, L = 1975.02
+.
+Begin Iterations
+0th iteration L=1760.72;sigma2e = 0.158873; sigma2beta = 0.00271405 ;pi = 0.0381196 time = 0.053277
+Converge at 6th iteration, L = 1966.61
+.
+Begin Iterations
+0th iteration L=1793.74;sigma2e = 0.155912; sigma2beta = 0.00284533 ;pi = 0.0376657 time = 0.048215
+Converge at 6th iteration, L = 1994.73
+.
+Begin Iterations
+0th iteration L=1784.09;sigma2e = 0.158041; sigma2beta = 0.00268878 ;pi = 0.0373401 time = 0.054254
+Converge at 6th iteration, L = 1975.01
